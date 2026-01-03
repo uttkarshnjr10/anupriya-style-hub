@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { MapPin, Sparkles } from "lucide-react";
+import { shopAddress } from "@/data/mockData";
 
 const HeroBanner = () => {
   return (
@@ -62,10 +63,13 @@ const HeroBanner = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.7, duration: 0.6 }}
-            className="inline-flex items-center gap-2 text-white/70"
+            className="inline-flex flex-col items-center gap-1 text-white/70"
           >
-            <MapPin className="w-4 h-4" />
-            <span className="text-sm">Station Rd, Barh</span>
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4" />
+              <span className="text-sm font-medium">{shopAddress.complex}</span>
+            </div>
+            <span className="text-xs text-white/50">{shopAddress.fullAddress}</span>
           </motion.div>
 
           {/* Decorative line */}

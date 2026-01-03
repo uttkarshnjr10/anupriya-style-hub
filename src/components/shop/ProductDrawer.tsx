@@ -1,9 +1,8 @@
-import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Minus, Plus, ShoppingBag, Check, Heart } from "lucide-react";
-import confetti from "canvas-confetti";
+import { X, Heart, MapPin } from "lucide-react";
 import type { Product } from "@/data/mockData";
-import { Button } from "@/components/ui/button";
+import { shopAddress } from "@/data/mockData";
+import { useState } from "react";
 
 interface ProductDrawerProps {
   product: Product | null;
@@ -12,33 +11,7 @@ interface ProductDrawerProps {
 }
 
 const ProductDrawer = ({ product, isOpen, onClose }: ProductDrawerProps) => {
-  const [quantity, setQuantity] = useState(1);
-  const [buyState, setBuyState] = useState<'idle' | 'loading' | 'success'>('idle');
   const [isWishlisted, setIsWishlisted] = useState(false);
-
-  const handleBuyNow = async () => {
-    setBuyState('loading');
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    setBuyState('success');
-    
-    // Trigger confetti
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ['#1E3A8A', '#D4AF37', '#10B981'],
-    });
-    
-    // Reset after showing success
-    setTimeout(() => {
-      setBuyState('idle');
-      setQuantity(1);
-      onClose();
-    }, 2000);
-  };
 
   if (!product) return null;
 
@@ -119,89 +92,41 @@ const ProductDrawer = ({ product, isOpen, onClose }: ProductDrawerProps) => {
 
                   {/* Description */}
                   <p className="text-muted-foreground leading-relaxed">
-                    Exquisite craftsmanship meets contemporary design. This piece is perfect for 
-                    special occasions and festive celebrations. Made with premium quality fabric 
-                    and intricate detailing.
+                    {product.description || 
+                      'Exquisite craftsmanship meets contemporary design. This piece is perfect for special occasions and festive celebrations. Made with premium quality fabric and intricate detailing.'}
                   </p>
 
-                  {/* Quantity Selector */}
+                  {/* Features */}
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Quantity</label>
-                    <div className="flex items-center gap-4">
-                      <button
-                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                        className="p-2 rounded-lg border hover:bg-muted transition-colors btn-pressed"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                      <span className="text-xl font-semibold w-12 text-center">{quantity}</span>
-                      <button
-                        onClick={() => setQuantity(quantity + 1)}
-                        className="p-2 rounded-lg border hover:bg-muted transition-colors btn-pressed"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Total */}
-                  <div className="flex items-center justify-between py-4 border-t">
-                    <span className="text-muted-foreground">Total</span>
-                    <span className="text-2xl font-bold text-primary">
-                      ₹{(product.price * quantity).toLocaleString('en-IN')}
-                    </span>
+                    <h4 className="font-medium text-foreground">Features:</h4>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      <li>• Premium quality fabric</li>
+                      <li>• Handcrafted detailing</li>
+                      <li>• Available in multiple sizes</li>
+                      <li>• Perfect for festive occasions</li>
+                    </ul>
                   </div>
                 </div>
               </div>
 
-              {/* Footer */}
-              <div className="p-4 border-t bg-muted/30">
-                <Button
-                  onClick={handleBuyNow}
-                  disabled={buyState !== 'idle'}
-                  className="w-full h-14 text-lg font-semibold rounded-xl btn-pressed relative overflow-hidden"
-                  style={{
-                    background: buyState === 'success' 
-                      ? 'hsl(var(--success))' 
-                      : 'linear-gradient(135deg, hsl(var(--gold)) 0%, hsl(38 80% 45%) 100%)',
-                  }}
-                >
-                  <AnimatePresence mode="wait">
-                    {buyState === 'idle' && (
-                      <motion.span
-                        key="idle"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="flex items-center gap-2 text-foreground"
-                      >
-                        <ShoppingBag className="w-5 h-5" />
-                        Buy Now
-                      </motion.span>
-                    )}
-                    {buyState === 'loading' && (
-                      <motion.div
-                        key="loading"
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        className="w-6 h-6 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin"
-                      />
-                    )}
-                    {buyState === 'success' && (
-                      <motion.span
-                        key="success"
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        className="flex items-center gap-2 text-white"
-                      >
-                        <Check className="w-6 h-6" />
-                        Order Placed!
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
-                </Button>
+              {/* Footer - Visit Store CTA */}
+              <div className="p-4 border-t bg-gradient-to-r from-primary/5 to-gold/5">
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-background border border-gold/20">
+                  <div className="p-3 rounded-full bg-gold/10">
+                    <MapPin className="w-5 h-5 text-gold" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-foreground text-sm">
+                      Want to grab this?
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Visit {shopAddress.name} at {shopAddress.shortAddress}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-center text-xs text-muted-foreground mt-3">
+                  {shopAddress.complex} • {shopAddress.fullAddress}
+                </p>
               </div>
             </div>
           </motion.div>

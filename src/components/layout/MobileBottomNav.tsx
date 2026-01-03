@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Home, ShoppingBag, BarChart3, User, Store, Package } from "lucide-react";
+import { Home, ShoppingBag, BarChart3, User, Store, Receipt, Globe } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 interface MobileNavProps {
@@ -17,9 +17,10 @@ const MobileBottomNav = ({ role }: MobileNavProps) => {
   ];
 
   const staffLinks = [
-    { icon: Package, label: 'Quick Sell', path: '/staff' },
+    { icon: Receipt, label: 'Billing', path: '/staff/billing' },
+    { icon: Globe, label: 'Inventory', path: '/staff/inventory' },
     { icon: Store, label: 'Shop', path: '/shop' },
-    { icon: User, label: 'Profile', path: '/' },
+    { icon: User, label: 'Account', path: '/' },
   ];
 
   const ownerLinks = [
@@ -44,7 +45,7 @@ const MobileBottomNav = ({ role }: MobileNavProps) => {
               key={link.label}
               whileTap={{ scale: 0.9 }}
               onClick={() => navigate(link.path)}
-              className="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl transition-colors"
+              className="flex flex-col items-center gap-1 py-2 px-3 rounded-2xl transition-colors"
             >
               <div className={`p-2 rounded-xl transition-colors ${
                 isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
