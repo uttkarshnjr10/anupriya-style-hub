@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Home, ShoppingBag, BarChart3, Settings, LogOut, Store, Users, Package } from "lucide-react";
+import { Home, ShoppingBag, BarChart3, Settings, LogOut, Store, Users, Receipt, Globe } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 interface SidebarProps {
@@ -12,7 +12,8 @@ const DesktopSidebar = ({ role }: SidebarProps) => {
 
   const staffLinks = [
     { icon: Home, label: 'Dashboard', path: '/staff' },
-    { icon: Package, label: 'Quick Sell', path: '/staff' },
+    { icon: Receipt, label: 'Record Sale', path: '/staff/billing' },
+    { icon: Globe, label: 'Online Inventory', path: '/staff/inventory' },
     { icon: Store, label: 'Visit Shop', path: '/shop' },
   ];
 

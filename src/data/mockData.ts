@@ -6,6 +6,8 @@ export interface Product {
   price: number;
   image: string;
   badge?: 'New Arrival' | 'Best Seller';
+  showOnWebsite?: boolean;
+  description?: string;
 }
 
 export interface SaleRecord {
@@ -13,8 +15,22 @@ export interface SaleRecord {
   productName: string;
   price: number;
   category: string;
+  subCategory: string;
   time: string;
   soldBy: string;
+  image?: string;
+}
+
+export interface OnlineInventoryItem {
+  id: string;
+  name: string;
+  category: 'Men' | 'Women' | 'Kids';
+  subCategory: string;
+  price: number;
+  image: string;
+  isNewArrival: boolean;
+  isBestSeller: boolean;
+  addedAt: string;
 }
 
 export interface DailyStat {
@@ -42,27 +58,41 @@ export interface InventoryEntry {
   type: 'purchase' | 'expense';
 }
 
+// Shop address constant
+export const shopAddress = {
+  name: "Anupriya Fashion Hub",
+  complex: "Jai Maa Kali Complex (Shop No 3)",
+  fullAddress: "FP74+6R8, Station Rd, Station Bazar, Barh, Bihar 803213",
+  shortAddress: "Station Rd, Barh",
+};
+
 export const products: Product[] = [
-  { id: '1', name: 'Royal Silk Sherwani', category: 'Men', subCategory: 'Sherwani', price: 15999, image: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=400&h=500&fit=crop', badge: 'Best Seller' },
-  { id: '2', name: 'Embroidered Kurta Set', category: 'Men', subCategory: 'Kurta', price: 3499, image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&h=500&fit=crop', badge: 'New Arrival' },
-  { id: '3', name: 'Designer Banarasi Saree', category: 'Women', subCategory: 'Saree', price: 8999, image: 'https://images.unsplash.com/photo-1610030469668-bd4ec3c4e2e7?w=400&h=500&fit=crop', badge: 'Best Seller' },
-  { id: '4', name: 'Anarkali Suit', category: 'Women', subCategory: 'Suit', price: 5499, image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400&h=500&fit=crop' },
-  { id: '5', name: 'Cotton Casual Shirt', category: 'Men', subCategory: 'Shirt', price: 1299, image: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400&h=500&fit=crop' },
-  { id: '6', name: 'Festive Lehenga', category: 'Women', subCategory: 'Lehenga', price: 12999, image: 'https://images.unsplash.com/photo-1583391733981-8498408d36c9?w=400&h=500&fit=crop', badge: 'New Arrival' },
-  { id: '7', name: 'Kids Party Wear', category: 'Kids', subCategory: 'Ethnic', price: 2499, image: 'https://images.unsplash.com/photo-1518831959646-742c3a14ebf7?w=400&h=500&fit=crop' },
-  { id: '8', name: 'Formal Trouser', category: 'Men', subCategory: 'Pant', price: 1899, image: 'https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=400&h=500&fit=crop' },
-  { id: '9', name: 'Chikankari Kurti', category: 'Women', subCategory: 'Kurti', price: 2199, image: 'https://images.unsplash.com/photo-1594938291221-5e98b1c3d52c?w=400&h=500&fit=crop' },
-  { id: '10', name: 'Kids Kurta Pajama', category: 'Kids', subCategory: 'Kurta', price: 1599, image: 'https://images.unsplash.com/photo-1503919545889-aef636e10ad4?w=400&h=500&fit=crop', badge: 'Best Seller' },
-  { id: '11', name: 'Printed Palazzo Set', category: 'Women', subCategory: 'Suit', price: 3299, image: 'https://images.unsplash.com/photo-1583391733920-5c8c1c8a3f0b?w=400&h=500&fit=crop' },
-  { id: '12', name: 'Nehru Jacket', category: 'Men', subCategory: 'Jacket', price: 2799, image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=500&fit=crop', badge: 'New Arrival' },
+  { id: '1', name: 'Royal Silk Sherwani', category: 'Men', subCategory: 'Silk Sherwani', price: 15999, image: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=400&h=500&fit=crop', badge: 'Best Seller', showOnWebsite: true, description: 'Exquisite royal silk sherwani with intricate embroidery, perfect for weddings and special occasions.' },
+  { id: '2', name: 'Embroidered Kurta Set', category: 'Men', subCategory: 'Cotton Kurta', price: 3499, image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&h=500&fit=crop', badge: 'New Arrival', showOnWebsite: true, description: 'Premium cotton kurta with elegant embroidery work, ideal for festive celebrations.' },
+  { id: '3', name: 'Designer Banarasi Saree', category: 'Women', subCategory: 'Silk Saree', price: 8999, image: 'https://images.unsplash.com/photo-1610030469668-bd4ec3c4e2e7?w=400&h=500&fit=crop', badge: 'Best Seller', showOnWebsite: true, description: 'Authentic Banarasi silk saree with traditional zari work and rich pallu design.' },
+  { id: '4', name: 'Anarkali Suit', category: 'Women', subCategory: 'Anarkali Suit', price: 5499, image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400&h=500&fit=crop', showOnWebsite: true, description: 'Flowing Anarkali suit with contemporary design and comfortable fit.' },
+  { id: '5', name: 'Cotton Casual Shirt', category: 'Men', subCategory: 'Cotton Shirt', price: 1299, image: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400&h=500&fit=crop', showOnWebsite: true, description: 'Breathable cotton shirt perfect for daily wear with a modern fit.' },
+  { id: '6', name: 'Festive Lehenga', category: 'Women', subCategory: 'Bridal Lehenga', price: 12999, image: 'https://images.unsplash.com/photo-1583391733981-8498408d36c9?w=400&h=500&fit=crop', badge: 'New Arrival', showOnWebsite: true, description: 'Stunning bridal lehenga with heavy embellishments and premium fabric.' },
+  { id: '7', name: 'Kids Party Wear', category: 'Kids', subCategory: 'Party Wear', price: 2499, image: 'https://images.unsplash.com/photo-1518831959646-742c3a14ebf7?w=400&h=500&fit=crop', showOnWebsite: true, description: 'Adorable party wear set for kids, comfortable yet stylish.' },
+  { id: '8', name: 'Formal Trouser', category: 'Men', subCategory: 'Formal Trousers', price: 1899, image: 'https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=400&h=500&fit=crop', showOnWebsite: true, description: 'Premium formal trousers with perfect tailoring for professional look.' },
+  { id: '9', name: 'Chikankari Kurti', category: 'Women', subCategory: 'Chikankari Kurti', price: 2199, image: 'https://images.unsplash.com/photo-1594938291221-5e98b1c3d52c?w=400&h=500&fit=crop', showOnWebsite: true, description: 'Elegant Lucknowi Chikankari kurti with delicate hand embroidery.' },
+  { id: '10', name: 'Kids Kurta Pajama', category: 'Kids', subCategory: 'Ethnic Kurta', price: 1599, image: 'https://images.unsplash.com/photo-1503919545889-aef636e10ad4?w=400&h=500&fit=crop', badge: 'Best Seller', showOnWebsite: true, description: 'Traditional kurta pajama set for kids, perfect for festive occasions.' },
+  { id: '11', name: 'Printed Palazzo Set', category: 'Women', subCategory: 'Kurti Set', price: 3299, image: 'https://images.unsplash.com/photo-1583391733920-5c8c1c8a3f0b?w=400&h=500&fit=crop', showOnWebsite: true, description: 'Comfortable palazzo set with trendy prints and soft fabric.' },
+  { id: '12', name: 'Nehru Jacket', category: 'Men', subCategory: 'Designer Jacket', price: 2799, image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=500&fit=crop', badge: 'New Arrival', showOnWebsite: true, description: 'Classic Nehru jacket with modern styling, versatile for any occasion.' },
 ];
 
 export const recentSales: SaleRecord[] = [
-  { id: '1', productName: 'Royal Silk Sherwani', price: 15999, category: 'Men - Sherwani', time: '10 mins ago', soldBy: 'Rahul' },
-  { id: '2', productName: 'Designer Banarasi Saree', price: 8999, category: 'Women - Saree', time: '25 mins ago', soldBy: 'Priya' },
-  { id: '3', productName: 'Cotton Casual Shirt', price: 1299, category: 'Men - Shirt', time: '1 hour ago', soldBy: 'Rahul' },
-  { id: '4', productName: 'Kids Party Wear', price: 2499, category: 'Kids - Ethnic', time: '2 hours ago', soldBy: 'Priya' },
-  { id: '5', productName: 'Anarkali Suit', price: 5499, category: 'Women - Suit', time: '3 hours ago', soldBy: 'Rahul' },
+  { id: '1', productName: 'Royal Silk Sherwani', price: 15999, category: 'Men', subCategory: 'Silk Sherwani', time: '10 mins ago', soldBy: 'Rahul' },
+  { id: '2', productName: 'Designer Banarasi Saree', price: 8999, category: 'Women', subCategory: 'Silk Saree', time: '25 mins ago', soldBy: 'Priya' },
+  { id: '3', productName: 'Cotton Casual Shirt', price: 1299, category: 'Men', subCategory: 'Cotton Shirt', time: '1 hour ago', soldBy: 'Rahul' },
+  { id: '4', productName: 'Kids Party Wear', price: 2499, category: 'Kids', subCategory: 'Party Wear', time: '2 hours ago', soldBy: 'Priya' },
+  { id: '5', productName: 'Anarkali Suit', price: 5499, category: 'Women', subCategory: 'Anarkali Suit', time: '3 hours ago', soldBy: 'Rahul' },
+];
+
+export const onlineInventory: OnlineInventoryItem[] = [
+  { id: '1', name: 'Royal Silk Sherwani', category: 'Men', subCategory: 'Silk Sherwani', price: 15999, image: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=400&h=500&fit=crop', isNewArrival: false, isBestSeller: true, addedAt: '2 days ago' },
+  { id: '2', name: 'Embroidered Kurta Set', category: 'Men', subCategory: 'Cotton Kurta', price: 3499, image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&h=500&fit=crop', isNewArrival: true, isBestSeller: false, addedAt: '1 day ago' },
+  { id: '3', name: 'Designer Banarasi Saree', category: 'Women', subCategory: 'Silk Saree', price: 8999, image: 'https://images.unsplash.com/photo-1610030469668-bd4ec3c4e2e7?w=400&h=500&fit=crop', isNewArrival: false, isBestSeller: true, addedAt: '5 days ago' },
 ];
 
 export const weeklySales: DailyStat[] = [
@@ -94,8 +124,9 @@ export const inventoryLog: InventoryEntry[] = [
   { id: '4', description: 'Shop Maintenance', amount: 5000, date: '2024-01-08', type: 'expense' },
 ];
 
+// Expanded subcategories with fabric/style details
 export const categories = {
-  Men: ['Shirt', 'Pant', 'Kurta', 'Sherwani', 'Jacket', 'Suit'],
-  Women: ['Saree', 'Suit', 'Kurti', 'Lehenga', 'Dress', 'Palazzo'],
-  Kids: ['Kurta', 'Dress', 'Ethnic', 'Casual', 'Party Wear'],
+  Men: ['Cotton Shirt', 'Linen Shirt', 'Formal Shirt', 'Jeans', 'Formal Trousers', 'Chinos', 'Cotton Kurta', 'Silk Kurta', 'Silk Sherwani', 'Velvet Sherwani', 'Designer Jacket', 'Nehru Jacket', 'Blazer'],
+  Women: ['Silk Saree', 'Cotton Saree', 'Georgette Saree', 'Banarasi Saree', 'Chikankari Kurti', 'Cotton Kurti', 'Kurti Set', 'Anarkali Suit', 'Salwar Suit', 'Bridal Lehenga', 'Party Lehenga', 'Palazzo Set', 'Dress'],
+  Kids: ['Ethnic Kurta', 'Party Wear', 'Casual Wear', 'Lehenga (Girls)', 'Sherwani (Boys)', 'Frock', 'Suit Set'],
 };
