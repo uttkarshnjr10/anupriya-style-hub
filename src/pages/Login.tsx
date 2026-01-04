@@ -5,6 +5,7 @@ import { Crown, Users, Lock, Mail, KeyRound, ArrowLeft, Eye, EyeOff } from "luci
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { api } from "@/lib/api"; // Import the API service
 
 const Login = () => {
   const [searchParams] = useSearchParams();
@@ -18,33 +19,34 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // TODO: BACKEND_API - POST /api/auth/login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 800));
+    try {
+      // Construct payload based on role
+      const payload = role === 'owner' 
+        ? { email, password } 
+        : { staffId, pin };
 
-    if (role === 'owner') {
-      // Hardcoded check for Owner: Password = "admin"
-      if (password === 'admin') {
-        toast.success("Welcome back, Mr. Vijay Sharma!");
-        navigate('/owner');
-      } else {
-        toast.error("Invalid credentials. Please try again.");
+      // API Call
+      const response = await api.post('/auth/login', payload);
+
+      if (response.data.success) {
+        toast.success(response.data.message || "Login successful!");
+        // Redirect based on role
+        if (role === 'owner') {
+          navigate('/owner');
+        } else {
+          navigate('/staff');
+        }
       }
-    } else {
-      // Hardcoded check for Staff: PIN = "1234"
-      if (pin === '1234') {
-        toast.success("Login successful!");
-        navigate('/staff');
-      } else {
-        toast.error("Invalid Staff ID or PIN. Please try again.");
-      }
+    } catch (error) {
+      console.error("Login failed", error);
+      // Toast is handled by the interceptor in api.ts, but we can add specific logic here if needed
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   const isOwner = role === 'owner';
@@ -106,7 +108,7 @@ const Login = () => {
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <Input
                       type="email"
-                      placeholder="owner@anupriya.com"
+                      placeholder="admin@afh.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="pl-12 h-12 rounded-xl"
@@ -145,7 +147,7 @@ const Login = () => {
                     <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <Input
                       type="text"
-                      placeholder="Enter your Staff ID"
+                      placeholder="STF001"
                       value={staffId}
                       onChange={(e) => setStaffId(e.target.value)}
                       className="pl-12 h-12 rounded-xl"
@@ -194,16 +196,10 @@ const Login = () => {
             </Button>
           </form>
 
-          {/* Demo Credentials Hint */}
+          {/* Helper Text */}
           <div className="mt-6 p-4 rounded-xl bg-muted/50 border border-border">
-            <p className="text-xs text-muted-foreground text-center">
-              <span className="font-medium">Demo Credentials:</span>
-              <br />
-              {isOwner ? (
-                <>Password: <span className="font-mono text-foreground">admin</span></>
-              ) : (
-                <>PIN: <span className="font-mono text-foreground">1234</span></>
-              )}
+             <p className="text-xs text-muted-foreground text-center">
+               Use the credentials provided by the store owner.
             </p>
           </div>
         </div>

@@ -1,21 +1,42 @@
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import DesktopSidebar from "@/components/layout/DesktopSidebar";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import RecordSaleForm from "@/components/dashboard/RecordSaleForm";
 import RecentActivity from "@/components/dashboard/RecentActivity";
-import { recentSales } from "@/data/mockData";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { api } from "@/lib/api";
 
 const StaffBilling = () => {
   const navigate = useNavigate();
+  const [realRecentSales, setRealRecentSales] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Function to fetch real data
+  const fetchRecentSales = useCallback(async () => {
+    try {
+      // Fetch last 10 sales
+      const response = await api.get('/transactions/history?limit=10&type=SALE');
+      if (response.data.success) {
+        setRealRecentSales(response.data.data.transactions);
+      }
+    } catch (error) {
+      console.error("Failed to fetch recent sales:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Fetch on mount
+  useEffect(() => {
+    fetchRecentSales();
+  }, [fetchRecentSales]);
 
   return (
     <div className="min-h-screen bg-secondary">
-      {/* Desktop Sidebar */}
       <DesktopSidebar role="staff" />
 
-      {/* Mobile Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -35,9 +56,7 @@ const StaffBilling = () => {
         </div>
       </motion.header>
 
-      {/* Main Content */}
       <main className="lg:ml-64 p-4 lg:p-8 pb-24 lg:pb-8">
-        {/* Desktop Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -47,17 +66,15 @@ const StaffBilling = () => {
           <p className="text-muted-foreground mt-1">Log sales from the physical shop</p>
         </motion.div>
 
-        {/* Grid Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Record Sale Form */}
-          <RecordSaleForm />
+          {/* Pass the refresh function to the form */}
+          <RecordSaleForm onSaleSuccess={fetchRecentSales} />
 
-          {/* Recent Activity */}
-          <RecentActivity sales={recentSales} />
+          {/* Pass the REAL data here */}
+          <RecentActivity sales={realRecentSales} />
         </div>
       </main>
 
-      {/* Mobile Bottom Navigation */}
       <MobileBottomNav role="staff" />
     </div>
   );

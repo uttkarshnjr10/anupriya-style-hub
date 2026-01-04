@@ -1,227 +1,186 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { IndianRupee, ShoppingCart, TrendingUp, ChevronLeft, ChevronRight, ArrowLeft, ExternalLink } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { LogOut, DollarSign, Wallet, CreditCard } from "lucide-react";
 import DesktopSidebar from "@/components/layout/DesktopSidebar";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import StatsCard from "@/components/dashboard/StatsCard";
-import { WeeklySalesChart, CategoryPieChart } from "@/components/dashboard/SalesChart";
-import StickyNotes from "@/components/dashboard/StickyNotes";
-import InventoryLog from "@/components/dashboard/InventoryLog";
+import { WeeklySalesChart } from "@/components/dashboard/SalesChart";
 import RecentActivity from "@/components/dashboard/RecentActivity";
-import { weeklySales, categorySales, ownerNotes, inventoryLog, recentSales } from "@/data/mockData";
-import { useNavigate } from "react-router-dom";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
+import StickyNotes from "@/components/dashboard/StickyNotes";
+import { RegisterStaffDialog } from "@/components/dashboard/RegisterStaffDialog";
+import { api, ApiResponse } from "@/lib/api";
+import { toast } from "sonner";
+import { ownerNotes } from "@/data/mockData"; // Notes are still local for now
 
-type DateRange = 'today' | 'yesterday' | 'week' | 'month';
-
-// Mock data for different date ranges
-const statsData: Record<DateRange, { revenue: string; items: string; monthly: string; trends: [number, number, number] }> = {
-  today: { revenue: "₹12,500", items: "14", monthly: "₹4.2L", trends: [12, 8, 15] },
-  yesterday: { revenue: "₹9,800", items: "11", monthly: "₹4.2L", trends: [8, 5, 15] },
-  week: { revenue: "₹78,500", items: "87", monthly: "₹4.2L", trends: [22, 18, 15] },
-  month: { revenue: "₹4,20,000", items: "412", monthly: "₹4.2L", trends: [15, 12, 15] },
-};
+// Dashboard stats contract
+interface DashboardStats {
+  totalRevenue: number;
+  totalExpenses: number;
+  netProfit: number;
+}
 
 const Owner = () => {
   const navigate = useNavigate();
-  const [dateRange, setDateRange] = useState<DateRange>('today');
-  const [weekOffset, setWeekOffset] = useState(0);
 
-  // TODO: BACKEND_API - GET /api/stats/dashboard?dateRange={range}
-  const currentStats = statsData[dateRange];
+  // 1. Stats State
+  const [stats, setStats] = useState<DashboardStats>({
+    totalRevenue: 0,
+    totalExpenses: 0,
+    netProfit: 0,
+  });
 
-  const stats = [
-    { title: dateRange === 'today' ? "Today's Revenue" : dateRange === 'yesterday' ? "Yesterday's Revenue" : dateRange === 'week' ? "This Week's Revenue" : "This Month's Revenue", value: currentStats.revenue, trend: currentStats.trends[0], icon: IndianRupee, variant: 'gold' as const },
-    { title: "Items Sold", value: currentStats.items, trend: currentStats.trends[1], icon: ShoppingCart, variant: 'default' as const },
-    { title: "Monthly Total", value: currentStats.monthly, trend: currentStats.trends[2], icon: TrendingUp, variant: 'success' as const },
-  ];
+  // 2. Chart State
+  const [chartData, setChartData] = useState<any[]>([]);
 
-  const getWeekLabel = () => {
-    if (weekOffset === 0) return "This Week";
-    if (weekOffset === -1) return "Last Week";
-    if (weekOffset === -2) return "2 Weeks Ago";
-    return `${Math.abs(weekOffset)} Weeks Ago`;
+  // 3. Activity State
+  const [recentSales, setRecentSales] = useState<any[]>([]);
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchAllData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        // Parallel Fetching for speed
+        const [statsRes, chartRes, activityRes] = await Promise.all([
+           api.get<ApiResponse<DashboardStats>>("/dashboard/stats").catch(e => null),
+           api.get("/dashboard/sales-chart").catch(e => null),
+           // For Recent Activity, we reuse the history endpoint with a small limit
+           api.get("/transactions/history?limit=5&type=SALE").catch(e => null)
+        ]);
+
+        if (statsRes?.data?.success) setStats(statsRes.data.data);
+        if (chartRes?.data?.success) setChartData(chartRes.data.data);
+        
+        // Handle Activity response (it has nested transactions array)
+        if (activityRes?.data?.success) {
+           setRecentSales(activityRes.data.data.transactions);
+        }
+
+      } catch (err) {
+        console.error("Dashboard fetch error:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAllData();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await api.post("/auth/logout");
+      toast.success("Logged out successfully");
+    } catch {
+      toast.error("Logout failed, but redirecting anyway.");
+    } finally {
+      navigate("/login");
+    }
   };
 
   return (
     <div className="min-h-screen bg-secondary">
-      {/* Desktop Sidebar */}
       <DesktopSidebar role="owner" />
 
       {/* Mobile Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="lg:hidden sticky top-0 z-30 glass px-4 py-4"
+        className="lg:hidden sticky top-0 z-30 glass px-4 py-4 flex justify-between items-center border-b border-border/40"
       >
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate('/')}
-            className="p-2 rounded-full hover:bg-muted transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex-1">
-            <h1 className="font-display text-xl font-bold">Owner Dashboard</h1>
-            <p className="text-sm text-muted-foreground">Welcome back!</p>
+        <div>
+          <h1 className="font-display text-xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-xs text-muted-foreground">Overview</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="scale-90 origin-right">
+             <RegisterStaffDialog />
           </div>
-          {/* Mobile Date Filter */}
-          <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRange)}>
-            <SelectTrigger className="w-[120px] h-9 rounded-xl text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="today">Today</SelectItem>
-              <SelectItem value="yesterday">Yesterday</SelectItem>
-              <SelectItem value="week">This Week</SelectItem>
-              <SelectItem value="month">This Month</SelectItem>
-            </SelectContent>
-          </Select>
+          <button
+            onClick={handleLogout}
+            className="p-2 text-muted-foreground hover:text-destructive transition-colors"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
         </div>
       </motion.header>
 
-      {/* Main Content */}
       <main className="lg:ml-64 p-4 lg:p-8 pb-24 lg:pb-8">
-        {/* Desktop Header with Date Filter */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="hidden lg:flex lg:items-center lg:justify-between mb-8"
+          className="max-w-7xl mx-auto space-y-6 lg:space-y-8"
         >
-          <div>
-            <h1 className="font-display text-3xl font-bold text-foreground">
-              Welcome back, Mr. Vijay Sharma
-            </h1>
-            <p className="text-muted-foreground mt-1">Here's what's happening with your store today.</p>
+          {/* Desktop Header */}
+          <div className="hidden lg:flex items-center justify-between">
+            <div>
+              <h1 className="font-display text-3xl font-bold text-foreground">Dashboard</h1>
+              <p className="text-muted-foreground mt-1">Welcome back, Vijay Sharma</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <RegisterStaffDialog />
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-card border border-border hover:border-destructive/50 hover:text-destructive transition-colors shadow-sm"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="font-medium">Logout</span>
+              </button>
+            </div>
           </div>
-          <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRange)}>
-            <SelectTrigger className="w-[180px] rounded-xl">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="today">Today</SelectItem>
-              <SelectItem value="yesterday">Yesterday</SelectItem>
-              <SelectItem value="week">This Week</SelectItem>
-              <SelectItem value="month">This Month</SelectItem>
-            </SelectContent>
-          </Select>
-        </motion.div>
 
-        {/* Stats Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          {stats.map((stat, index) => (
+          {error && (
+            <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+              {error}
+            </div>
+          )}
+
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <StatsCard
-              key={stat.title}
-              title={stat.title}
-              value={stat.value}
-              trend={stat.trend}
-              icon={stat.icon}
-              index={index}
-              variant={stat.variant}
+              title="Total Revenue"
+              value={isLoading ? "..." : `₹${stats.totalRevenue.toLocaleString("en-IN")}`}
+              trend={12.5}
+              icon={DollarSign}
+              index={0}
+              variant="default"
             />
-          ))}
-        </div>
+            <StatsCard
+              title="Total Expenses"
+              value={isLoading ? "..." : `₹${stats.totalExpenses.toLocaleString("en-IN")}`}
+              trend={-4.2}
+              icon={Wallet}
+              index={1}
+              variant="default"
+            />
+            <StatsCard
+              title="Net Profit"
+              value={isLoading ? "..." : `₹${stats.netProfit.toLocaleString("en-IN")}`}
+              trend={8.1}
+              icon={CreditCard}
+              index={2}
+              variant="success"
+            />
+          </div>
 
-        {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Weekly Sales Chart with Navigation */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.4 }}
-            className="bg-card rounded-2xl p-6 shadow-soft border border-border"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="font-display text-xl font-semibold">Weekly Sales</h3>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setWeekOffset(prev => prev - 1)}
-                  className="h-8 w-8 rounded-lg"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <span className="text-sm text-muted-foreground min-w-[100px] text-center">
-                  {getWeekLabel()}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setWeekOffset(prev => Math.min(prev + 1, 0))}
-                  disabled={weekOffset === 0}
-                  className="h-8 w-8 rounded-lg"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+            <div className="lg:col-span-2">
+               {/* Real Chart Data */}
+              <WeeklySalesChart data={chartData} />
             </div>
-            <WeeklySalesChart data={weeklySales} />
-          </motion.div>
-          <CategoryPieChart data={categorySales} />
-        </div>
-
-        {/* Recent Activity & Inventory Summary */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Recent Sales Summary */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="bg-card rounded-2xl p-6 shadow-soft border border-border"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-display text-xl font-semibold">Recent Sales</h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate('/owner/sales-history')}
-                className="text-primary hover:text-primary/80 gap-1"
-              >
-                View All
-                <ExternalLink className="w-3 h-3" />
-              </Button>
+            <div>
+               {/* Real Activity Data */}
+              <RecentActivity sales={recentSales} />
             </div>
-            <RecentActivity sales={recentSales.slice(0, 5)} />
-          </motion.div>
+          </div>
 
-          {/* Inventory Log Summary */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="bg-card rounded-2xl p-6 shadow-soft border border-border"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-display text-xl font-semibold">Inventory Log</h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate('/owner/inventory-history')}
-                className="text-primary hover:text-primary/80 gap-1"
-              >
-                View All
-                <ExternalLink className="w-3 h-3" />
-              </Button>
-            </div>
-            <InventoryLog entries={inventoryLog.slice(0, 5)} />
-          </motion.div>
-        </div>
-
-        {/* Management Tools */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <StickyNotes initialNotes={ownerNotes} />
-        </div>
+        </motion.div>
       </main>
 
-      {/* Mobile Bottom Navigation */}
       <MobileBottomNav role="owner" />
     </div>
   );
