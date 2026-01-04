@@ -18,14 +18,14 @@ const Index = () => {
       title: "Login as Staff",
       subtitle: "Manage sales & inventory",
       icon: Users,
-      path: "/staff",
+      path: "/login?role=staff",
       variant: "staff" as const,
     },
     {
       title: "Login as Owner",
       subtitle: "View analytics & reports",
       icon: Crown,
-      path: "/owner",
+      path: "/login?role=owner",
       variant: "owner" as const,
     },
   ];

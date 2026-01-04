@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Home, ShoppingBag, BarChart3, User, Store, Receipt, Globe } from "lucide-react";
+import { BarChart3, User, Store, Receipt, Globe } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 interface MobileNavProps {
@@ -10,11 +10,10 @@ const MobileBottomNav = ({ role }: MobileNavProps) => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const customerLinks = [
-    { icon: Home, label: 'Home', path: '/shop' },
-    { icon: ShoppingBag, label: 'Shop', path: '/shop' },
-    { icon: User, label: 'Profile', path: '/shop' },
-  ];
+  // Customers don't get bottom navigation - they get a clean catalog experience
+  if (role === 'customer') {
+    return null;
+  }
 
   const staffLinks = [
     { icon: Receipt, label: 'Billing', path: '/staff/billing' },
@@ -29,7 +28,7 @@ const MobileBottomNav = ({ role }: MobileNavProps) => {
     { icon: User, label: 'Account', path: '/' },
   ];
 
-  const links = role === 'customer' ? customerLinks : role === 'staff' ? staffLinks : ownerLinks;
+  const links = role === 'staff' ? staffLinks : ownerLinks;
 
   return (
     <motion.nav

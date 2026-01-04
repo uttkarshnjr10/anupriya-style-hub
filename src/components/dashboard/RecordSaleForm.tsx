@@ -43,6 +43,9 @@ const RecordSaleForm = () => {
     }
 
     setIsSubmitting(true);
+    
+    // TODO: BACKEND_API - POST /api/sales/record (Multipart for Image)
+    // FormData should include: image (file), price, category, subCategory
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     toast.success(`Sale recorded: ₹${price} - ${selectedSubCategory}`);
