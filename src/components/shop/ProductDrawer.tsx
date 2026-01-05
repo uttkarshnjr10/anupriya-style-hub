@@ -1,11 +1,22 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Heart, MapPin } from "lucide-react";
-import type { Product } from "@/data/mockData";
 import { shopAddress } from "@/data/mockData";
 import { useState } from "react";
 
+// Flexible Product type to match Shop.tsx
+interface DrawerProduct {
+  id: string;
+  name: string;
+  category: string;
+  subCategory: string;
+  price: number;
+  image: string;
+  badge?: string;
+  description?: string;
+}
+
 interface ProductDrawerProps {
-  product: Product | null;
+  product: DrawerProduct | null;
   isOpen: boolean;
   onClose: () => void;
 }
