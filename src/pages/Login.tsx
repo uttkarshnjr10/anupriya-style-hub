@@ -32,23 +32,28 @@ const Login = () => {
       if (response.data.success) {
         const user = response.data.data.user;
 
-        // --- FIX: Normalize Role to Lowercase ---
-        // Backend sends "OWNER", Frontend needs "owner"
-        const normalizedRole = user.role.toLowerCase(); 
-        // ----------------------------------------
+        // --- CRITICAL FIX: FORCE ROLE TO LOWERCASE ---
+        // Backend sends "OWNER", we convert it to "owner"
+        let safeRole = user.role.trim().toLowerCase();
+        
+        // Handle explicit "admin" case just to be safe
+        if (safeRole === 'admin') {
+            safeRole = 'owner';
+        }
+        // ---------------------------------------------
 
-        // Save Normalized Data to Context
+        // 1. Save CLEAN role to Context
         login({
           id: user._id,
           name: user.name,
-          role: normalizedRole, 
+          role: safeRole, 
           email: user.email,
         });
 
         toast.success(response.data.message || "Login successful!");
 
-        // Navigate based on normalized role
-        if (normalizedRole === "owner") {
+        // 2. Navigate using the CLEAN role
+        if (safeRole === "owner") {
           navigate("/owner");
         } else {
           navigate("/staff");
@@ -65,14 +70,12 @@ const Login = () => {
 
   return (
     <div className="min-h-screen gradient-hero flex flex-col items-center justify-center p-6 relative overflow-hidden">
-      {/* Decorative Elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-gold/10 rounded-full blur-3xl" />
         <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gold/5 rounded-full blur-3xl" />
         <div className="absolute top-1/3 right-1/4 w-64 h-64 bg-primary/20 rounded-full blur-3xl" />
       </div>
 
-      {/* Back Button */}
       <motion.button
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
@@ -82,7 +85,6 @@ const Login = () => {
         <ArrowLeft className="w-5 h-5 text-white" />
       </motion.button>
 
-      {/* Login Card */}
       <motion.div
         initial={{ opacity: 0, y: 30, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -90,7 +92,6 @@ const Login = () => {
         className="relative z-10 w-full max-w-md"
       >
         <div className="bg-card/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-border p-8">
-          {/* Header */}
           <div className="text-center mb-8">
             <div className={`w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center ${
               isOwner ? 'gradient-gold' : 'gradient-royal'
@@ -109,11 +110,9 @@ const Login = () => {
             </p>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleLogin} className="space-y-5">
             {isOwner ? (
               <>
-                {/* Owner: Email & Password */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Email</label>
                   <div className="relative">
@@ -152,7 +151,6 @@ const Login = () => {
               </>
             ) : (
               <>
-                {/* Staff: ID & PIN */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Staff ID</label>
                   <div className="relative">
@@ -208,7 +206,6 @@ const Login = () => {
             </Button>
           </form>
 
-          {/* Helper Text */}
           <div className="mt-6 p-4 rounded-xl bg-muted/50 border border-border">
              <p className="text-xs text-muted-foreground text-center">
                Use the credentials provided by the store owner.

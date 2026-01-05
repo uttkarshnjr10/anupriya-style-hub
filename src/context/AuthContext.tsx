@@ -41,11 +41,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // 3. Logout Function
-  const logout = () => {
+//   const logout = () => {
+//     setUser(null);
+//     localStorage.removeItem("afh_user");
+//     // Also clear cookies via API if possible
+//     window.location.href = "/login";
+//   };
+const logout = () => {
     setUser(null);
     localStorage.removeItem("afh_user");
-    // Also clear cookies via API if possible
-    window.location.href = "/login";
+    
+    window.location.href = "/";
   };
 
   return (

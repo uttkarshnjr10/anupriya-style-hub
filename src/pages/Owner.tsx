@@ -77,7 +77,7 @@ const Owner = () => {
     } catch {
       toast.error("Logout failed, but redirecting anyway.");
     } finally {
-      navigate("/login");
+      navigate("/");
     }
   };
 
