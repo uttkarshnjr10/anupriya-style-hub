@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { LogOut, DollarSign, Wallet, CreditCard } from "lucide-react";
+import { LogOut, User as UserIcon } from "lucide-react";
 import DesktopSidebar from "@/components/layout/DesktopSidebar";
-import MobileBottomNav from "@/components/layout/MobileBottomNav";
+// import MobileBottomNav from "@/components/layout/MobileBottomNav"; // REMOVED
 import StatsCard from "@/components/dashboard/StatsCard";
 import { WeeklySalesChart } from "@/components/dashboard/SalesChart";
 import RecentActivity from "@/components/dashboard/RecentActivity";
@@ -11,7 +11,8 @@ import StickyNotes from "@/components/dashboard/StickyNotes";
 import { RegisterStaffDialog } from "@/components/dashboard/RegisterStaffDialog";
 import { api, ApiResponse } from "@/lib/api";
 import { toast } from "sonner";
-import { ownerNotes } from "@/data/mockData"; // Notes are still local for now
+import { ownerNotes } from "@/data/mockData";
+import { useAuth } from "@/context/AuthContext";
 
 // Dashboard stats contract
 interface DashboardStats {
@@ -22,6 +23,7 @@ interface DashboardStats {
 
 const Owner = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   // 1. Stats State
   const [stats, setStats] = useState<DashboardStats>({
@@ -44,24 +46,21 @@ const Owner = () => {
       setIsLoading(true);
       setError(null);
       try {
-        // Parallel Fetching for speed
         const [statsRes, chartRes, activityRes] = await Promise.all([
-           api.get<ApiResponse<DashboardStats>>("/dashboard/stats").catch(e => null),
-           api.get("/dashboard/sales-chart").catch(e => null),
-           // For Recent Activity, we reuse the history endpoint with a small limit
-           api.get("/transactions/history?limit=5&type=SALE").catch(e => null)
+          api.get<ApiResponse<DashboardStats>>("/dashboard/stats").catch(() => null),
+          api.get("/dashboard/sales-chart").catch(() => null),
+          api.get("/transactions/history?limit=5&type=SALE").catch(() => null),
         ]);
 
         if (statsRes?.data?.success) setStats(statsRes.data.data);
         if (chartRes?.data?.success) setChartData(chartRes.data.data);
-        
-        // Handle Activity response (it has nested transactions array)
-        if (activityRes?.data?.success) {
-           setRecentSales(activityRes.data.data.transactions);
-        }
 
+        if (activityRes?.data?.success) {
+          setRecentSales(activityRes.data.data.transactions);
+        }
       } catch (err) {
         console.error("Dashboard fetch error:", err);
+        setError("Failed to load dashboard data");
       } finally {
         setIsLoading(false);
       }
@@ -77,111 +76,80 @@ const Owner = () => {
     } catch {
       toast.error("Logout failed, but redirecting anyway.");
     } finally {
-      navigate("/");
+      localStorage.removeItem("afh_user");
+      window.location.href = "/";
     }
   };
 
   return (
-    <div className="min-h-screen bg-secondary">
-      <DesktopSidebar role="owner" />
+    <div className="min-h-screen bg-background">
+      <DesktopSidebar />
 
-      {/* Mobile Header */}
-      <motion.header
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="lg:hidden sticky top-0 z-30 glass px-4 py-4 flex justify-between items-center border-b border-border/40"
-      >
-        <div>
-          <h1 className="font-display text-xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-xs text-muted-foreground">Overview</p>
+      <main className="md:pl-72 p-4 space-y-6">
+        {/* --- HEADER --- */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="font-display text-2xl font-bold text-foreground">
+              Hi, {user?.name?.split(" ")[0]} 👋
+            </h1>
+            <p className="text-muted-foreground text-sm">Owner Dashboard</p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <RegisterStaffDialog />
+
+            <button
+              onClick={() => navigate("/account")}
+              className="p-2.5 bg-white border border-border rounded-xl shadow-sm active:scale-95 transition-transform"
+            >
+              <UserIcon className="w-5 h-5 text-foreground" />
+            </button>
+
+            <button
+              onClick={handleLogout}
+              className="p-2.5 bg-white border border-border rounded-xl shadow-sm active:scale-95 transition-transform"
+            >
+              <LogOut className="w-5 h-5 text-red-500" />
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="scale-90 origin-right">
-             <RegisterStaffDialog />
+
+        {error && (
+          <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+            {error}
           </div>
-          <button
-            onClick={handleLogout}
-            className="p-2 text-muted-foreground hover:text-destructive transition-colors"
-          >
-            <LogOut className="w-5 h-5" />
-          </button>
+        )}
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <StatsCard
+            title="Total Revenue"
+            value={isLoading ? "..." : `₹${stats.totalRevenue.toLocaleString()}`}
+            trendUp
+            icon="revenue"
+          />
+          <StatsCard
+            title="Total Expenses"
+            value={isLoading ? "..." : `₹${stats.totalExpenses.toLocaleString()}`}
+            // trend="-4.2%"
+            trendUp={false}
+            icon="expense"
+          />
+          <StatsCard
+            title="Net Profit"
+            value={isLoading ? "..." : `₹${stats.netProfit.toLocaleString()}`}
+            // trend="+8.1%"
+            trendUp
+            icon="wallet"
+          />
         </div>
-      </motion.header>
 
-      <main className="lg:ml-64 p-4 lg:p-8 pb-24 lg:pb-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="max-w-7xl mx-auto space-y-6 lg:space-y-8"
-        >
-          {/* Desktop Header */}
-          <div className="hidden lg:flex items-center justify-between">
-            <div>
-              <h1 className="font-display text-3xl font-bold text-foreground">Dashboard</h1>
-              <p className="text-muted-foreground mt-1">Welcome back, Vijay Sharma</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <RegisterStaffDialog />
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-card border border-border hover:border-destructive/50 hover:text-destructive transition-colors shadow-sm"
-              >
-                <LogOut className="w-4 h-4" />
-                <span className="font-medium">Logout</span>
-              </button>
-            </div>
-          </div>
+        <WeeklySalesChart data={chartData} />
 
-          {error && (
-            <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm">
-              {error}
-            </div>
-          )}
+        <RecentActivity transactions={recentSales} />
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <StatsCard
-              title="Total Revenue"
-              value={isLoading ? "..." : `₹${stats.totalRevenue.toLocaleString("en-IN")}`}
-              trend={12.5}
-              icon={DollarSign}
-              index={0}
-              variant="default"
-            />
-            <StatsCard
-              title="Total Expenses"
-              value={isLoading ? "..." : `₹${stats.totalExpenses.toLocaleString("en-IN")}`}
-              trend={-4.2}
-              icon={Wallet}
-              index={1}
-              variant="default"
-            />
-            <StatsCard
-              title="Net Profit"
-              value={isLoading ? "..." : `₹${stats.netProfit.toLocaleString("en-IN")}`}
-              trend={8.1}
-              icon={CreditCard}
-              index={2}
-              variant="success"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-            <div className="lg:col-span-2">
-               {/* Real Chart Data */}
-              <WeeklySalesChart data={chartData} />
-            </div>
-            <div>
-               {/* Real Activity Data */}
-              <RecentActivity sales={recentSales} />
-            </div>
-          </div>
-
-          <StickyNotes initialNotes={ownerNotes} />
-        </motion.div>
+        <StickyNotes initialNotes={ownerNotes} />
       </main>
-
-      <MobileBottomNav role="owner" />
     </div>
   );
 };
