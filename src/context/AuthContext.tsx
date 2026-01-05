@@ -23,27 +23,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // DEBUG: Print what we find on load
     const storedUser = localStorage.getItem("afh_user");
-    console.log("🔄 AuthContext Loading...");
-    console.log("📦 Found in LocalStorage:", storedUser);
+  //  console.log("🔄 AuthContext Loading...");
+   // console.log("📦 Found in LocalStorage:", storedUser);
 
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
-        console.log("✅ Parsed User:", parsedUser);
+      //  console.log("✅ Parsed User:", parsedUser);
         setUser(parsedUser);
       } catch (error) {
-        console.error("❌ Failed to parse user data", error);
+      //  console.error("❌ Failed to parse user data", error);
         localStorage.removeItem("afh_user");
       }
     } else {
-      console.warn("⚠️ No user found in LocalStorage");
+    //  console.warn("⚠️ No user found in LocalStorage");
     }
     setIsLoading(false);
   }, []);
 
   const login = (userData: User): Promise<void> => {
     return new Promise((resolve) => {
-      console.log("🔐 Login called with:", userData);
+     // console.log("🔐 Login called with:", userData);
       localStorage.setItem("afh_user", JSON.stringify(userData));
       setUser(userData);
       // Small delay to ensure state is updated before navigation
@@ -52,7 +52,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = () => {
-    console.log("👋 Logout called");
+   // console.log("👋 Logout called");
     setUser(null);
     localStorage.removeItem("afh_user");
     window.location.href = "/";
