@@ -21,26 +21,24 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // ... imports and setup
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
       const payload = role === "owner" ? { email, password } : { staffId, pin };
+      
+      // 1. Attempt Login
       const response = await api.post("/auth/login", payload);
 
       if (response.data.success) {
         const user = response.data.data.user;
 
-        // 1. Normalize Role (Fixes the Case Sensitivity Issue)
+        // 2. Normalize Role
         let safeRole = user.role.trim().toLowerCase();
-        if (safeRole === 'admin') {
-            safeRole = 'owner';
-        }
+        if (safeRole === 'admin') safeRole = 'owner';
 
-        // 2. Save to Context & LocalStorage - await to prevent race condition
+        // 3. Save to Context
         await login({
           id: user._id,
           name: user.name,
@@ -50,15 +48,26 @@ const Login = () => {
 
         toast.success(response.data.message || "Login successful!");
 
-        // --- CRITICAL FIX FOR PRODUCTION ---
-        // Use window.location.href to force full reload after state is saved
-        // This prevents race conditions in incognito/other devices
-        const targetPath = safeRole === "owner" ? "/owner" : "/staff";
-        window.location.href = targetPath;
-        // -----------------------------------
+        // 4. ROBUST REDIRECT STRATEGY
+        // We delay slightly to allow the browser to process the Set-Cookie header
+        // This is crucial for Safari/Brave
+        setTimeout(() => {
+           const targetPath = safeRole === "owner" ? "/owner" : "/staff";
+           
+           // We use window.location.href instead of navigate() 
+           // to FORCE a fresh request to the server. 
+           // This ensures the new cookie is included in the very first request the dashboard makes.
+           window.location.href = targetPath;
+        }, 100);
       }
     } catch (error: any) {
       console.error("Login failed", error);
+      // Detailed error for Brave/Safari users
+      if (error.response?.status === 401 || error.message?.includes("Network Error")) {
+         toast.error("Login failed. If using Brave/Safari, please enable 'Allow Cross-Site Cookies' or turn off shields for this site.");
+      } else {
+         toast.error(error.response?.data?.message || "Invalid credentials");
+      }
     } finally {
       setIsLoading(false);
     }
