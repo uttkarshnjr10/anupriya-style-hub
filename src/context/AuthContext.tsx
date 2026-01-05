@@ -47,10 +47,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 //     // Also clear cookies via API if possible
 //     window.location.href = "/login";
 //   };
-const logout = () => {
-    setUser(null);
+// 3. Logout Function
+  const logout = () => {
+    // 1. Clear Local Storage
     localStorage.removeItem("afh_user");
-    
+
+    // 2. Force Reload to Home Page
+    // We REMOVED setUser(null) to stop ProtectedRoute from 
+    // redirecting us to /login while the page is trying to reload.
     window.location.href = "/";
   };
 
