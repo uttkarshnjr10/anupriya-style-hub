@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { LogOut, DollarSign, Wallet, CreditCard } from "lucide-react";
 import DesktopSidebar from "@/components/layout/DesktopSidebar";
-import MobileBottomNav from "@/components/layout/MobileBottomNav";
+import { useAuth } from "@/context/AuthContext";
 import StatsCard from "@/components/dashboard/StatsCard";
 import { WeeklySalesChart } from "@/components/dashboard/SalesChart";
 import RecentActivity from "@/components/dashboard/RecentActivity";
@@ -22,6 +22,7 @@ interface DashboardStats {
 
 const Owner = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   // 1. Stats State
   const [stats, setStats] = useState<DashboardStats>({
@@ -93,7 +94,7 @@ const Owner = () => {
       >
         <div>
           <h1 className="font-display text-xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-xs text-muted-foreground">Overview</p>
+          <p className="text-xs text-muted-foreground">Hi, {user?.name || 'Owner'}</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="scale-90 origin-right">
@@ -117,8 +118,8 @@ const Owner = () => {
           {/* Desktop Header */}
           <div className="hidden lg:flex items-center justify-between">
             <div>
-              <h1 className="font-display text-3xl font-bold text-foreground">Dashboard</h1>
-              <p className="text-muted-foreground mt-1">Welcome back, Vijay Sharma</p>
+          <h1 className="font-display text-3xl font-bold text-foreground">Dashboard</h1>
+              <p className="text-muted-foreground mt-1">Welcome back, {user?.name || 'Owner'}</p>
             </div>
             <div className="flex items-center gap-4">
               <RegisterStaffDialog />
@@ -177,11 +178,9 @@ const Owner = () => {
             </div>
           </div>
 
-          <StickyNotes initialNotes={ownerNotes} />
+        <StickyNotes initialNotes={ownerNotes} />
         </motion.div>
       </main>
-
-      <MobileBottomNav role="owner" />
     </div>
   );
 };
