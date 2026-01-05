@@ -431,8 +431,8 @@ const OnlineInventoryForm = ({ onSuccess }: OnlineInventoryFormProps) => {
       <input
         ref={fileInputRef}
         type="file"
-        // CRITICAL: Prevent AVIF/HEIC selection
-        accept="image/png, image/jpeg, image/jpg, image/webp"
+        accept="image/*"
+        capture="environment"
         onChange={handleImageChange}
         className="hidden"
       />
