@@ -21,6 +21,8 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // ... imports and setup
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -32,17 +34,13 @@ const Login = () => {
       if (response.data.success) {
         const user = response.data.data.user;
 
-        // --- CRITICAL FIX: FORCE ROLE TO LOWERCASE ---
-        // Backend sends "OWNER", we convert it to "owner"
+        // 1. Normalize Role (Fixes the Case Sensitivity Issue)
         let safeRole = user.role.trim().toLowerCase();
-        
-        // Handle explicit "admin" case just to be safe
         if (safeRole === 'admin') {
             safeRole = 'owner';
         }
-        // ---------------------------------------------
 
-        // 1. Save CLEAN role to Context
+        // 2. Save to Context & LocalStorage
         login({
           id: user._id,
           name: user.name,
@@ -52,12 +50,16 @@ const Login = () => {
 
         toast.success(response.data.message || "Login successful!");
 
-        // 2. Navigate using the CLEAN role
+        // --- CRITICAL FIX FOR PRODUCTION ---
+        // We use window.location.href instead of navigate()
+        // This ensures the App reloads and reads the user from LocalStorage
+        // BEFORE checking if you are allowed to enter.
         if (safeRole === "owner") {
-          navigate("/owner");
+          window.location.href = "/owner";
         } else {
-          navigate("/staff");
+          window.location.href = "/staff";
         }
+        // -----------------------------------
       }
     } catch (error: any) {
       console.error("Login failed", error);
