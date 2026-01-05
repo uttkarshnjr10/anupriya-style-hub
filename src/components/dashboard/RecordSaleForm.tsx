@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { categories } from "@/data/mockData";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
+// 1. Import compression library
+import imageCompression from "browser-image-compression";
 
-// Added Prop Interface
 interface RecordSaleFormProps {
   onSaleSuccess?: () => void;
 }
@@ -22,8 +23,12 @@ const RecordSaleForm = ({ onSaleSuccess }: RecordSaleFormProps) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   
+  // 2. Add compression state
+  const [isCompressing, setIsCompressing] = useState(false);
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     return () => stopCamera();
@@ -54,6 +59,36 @@ const RecordSaleForm = ({ onSaleSuccess }: RecordSaleFormProps) => {
     setIsCameraOpen(false);
   };
 
+  // Helper function to handle compression for both Camera and Uploads
+  const processAndSetImage = async (file: File) => {
+    setIsCompressing(true);
+    try {
+      const options = {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true,
+        fileType: "image/jpeg"
+      };
+      
+      const compressedFile = await imageCompression(file, options);
+      
+      setImageFile(compressedFile);
+      
+      // Generate preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+        setIsCompressing(false); // Done
+      };
+      reader.readAsDataURL(compressedFile);
+
+    } catch (error) {
+      console.error("Compression error", error);
+      toast.error("Error processing image");
+      setIsCompressing(false);
+    }
+  };
+
   const capturePhoto = () => {
     if (videoRef.current) {
       const video = videoRef.current;
@@ -61,17 +96,26 @@ const RecordSaleForm = ({ onSaleSuccess }: RecordSaleFormProps) => {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext("2d");
+      
       if (ctx) {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
         canvas.toBlob((blob) => {
           if (blob) {
+            // Convert blob to File and pass to compressor
             const file = new File([blob], "captured-sale.jpg", { type: "image/jpeg" });
-            setImageFile(file);
-            setImagePreview(URL.createObjectURL(blob));
+            processAndSetImage(file); // Use the helper
             stopCamera();
           }
         }, "image/jpeg", 0.8);
       }
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      processAndSetImage(file); // Use the helper
     }
   };
 
@@ -130,7 +174,7 @@ const RecordSaleForm = ({ onSaleSuccess }: RecordSaleFormProps) => {
       const newProduct = productRes.data.data;
 
       // 4. Record Sale
-      await api.post("/transactions/sale", {
+      const saleRes = await api.post("/transactions/sale", {
         productId: newProduct._id,
         salePrice: parseInt(price)
       });
@@ -148,17 +192,6 @@ const RecordSaleForm = ({ onSaleSuccess }: RecordSaleFormProps) => {
       toast.error("Failed to record sale.");
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setImagePreview(reader.result as string);
-      reader.readAsDataURL(file);
     }
   };
 
@@ -202,10 +235,18 @@ const RecordSaleForm = ({ onSaleSuccess }: RecordSaleFormProps) => {
           <div className="relative rounded-xl overflow-hidden aspect-video bg-black">
             <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
             <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4">
+               {/* Stop Camera Button */}
                <Button variant="destructive" size="icon" className="rounded-full w-12 h-12" onClick={stopCamera}>
                  <X className="w-6 h-6" />
                </Button>
-               <Button variant="default" size="icon" className="rounded-full w-16 h-16 border-4 border-white bg-transparent" onClick={capturePhoto}>
+               {/* Capture Button */}
+               <Button 
+                 variant="default" 
+                 size="icon" 
+                 className="rounded-full w-16 h-16 border-4 border-white bg-transparent" 
+                 onClick={capturePhoto}
+                 disabled={isCompressing} // Disable if already processing
+               >
                  <div className="w-12 h-12 bg-white rounded-full" />
                </Button>
             </div>
@@ -214,12 +255,22 @@ const RecordSaleForm = ({ onSaleSuccess }: RecordSaleFormProps) => {
           <motion.button
             whileTap={{ scale: 0.98 }}
             onClick={startCamera}
+            disabled={isCompressing}
             className="w-full h-48 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 flex flex-col items-center justify-center gap-3 hover:bg-primary/10"
           >
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-              <Camera className="w-8 h-8 text-primary" />
-            </div>
-            <p className="font-medium">Tap to Start Camera</p>
+            {isCompressing ? (
+               <div className="flex flex-col items-center gap-2 text-primary">
+                  <Loader2 className="w-8 h-8 animate-spin" />
+                  <span className="text-sm font-medium">Processing Image...</span>
+               </div>
+            ) : (
+              <>
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Camera className="w-8 h-8 text-primary" />
+                </div>
+                <p className="font-medium">Tap to Start Camera</p>
+              </>
+            )}
           </motion.button>
         )}
       </div>
@@ -277,7 +328,8 @@ const RecordSaleForm = ({ onSaleSuccess }: RecordSaleFormProps) => {
 
         <Button
           onClick={handleSubmit}
-          disabled={isSubmitting || !price || !selectedSubCategory}
+          // Added check for isCompressing to prevent submitting while processing
+          disabled={isSubmitting || isCompressing || !price || !selectedSubCategory}
           className="w-full h-14 rounded-xl gradient-gold text-foreground font-semibold text-lg"
         >
           {isSubmitting ? (
