@@ -5,12 +5,18 @@ import { Crown, Users, Lock, Mail, KeyRound, ArrowLeft, Eye, EyeOff } from "luci
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { api } from "@/lib/api"; // Import the API service
+import { api } from "@/lib/api";
+
+// ✅ 1. Import Auth hook
+import { useAuth } from "@/context/AuthContext";
 
 const Login = () => {
   const [searchParams] = useSearchParams();
-  const role = searchParams.get('role') as 'staff' | 'owner' || 'staff';
+  const role = (searchParams.get("role") as "staff" | "owner") || "staff";
   const navigate = useNavigate();
+
+  // ✅ 2. Get login function from context
+  const { login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -25,31 +31,42 @@ const Login = () => {
 
     try {
       // Construct payload based on role
-      const payload = role === 'owner' 
-        ? { email, password } 
-        : { staffId, pin };
+      const payload =
+        role === "owner"
+          ? { email, password }
+          : { staffId, pin };
 
-      // API Call
-      const response = await api.post('/auth/login', payload);
+      const response = await api.post("/auth/login", payload);
 
       if (response.data.success) {
+        const user = response.data.data.user;
+
+        // ✅ 3. SAVE USER TO AUTH CONTEXT
+        login({
+          id: user._id,
+          name: user.name,
+          role: user.role,
+          email: user.email,
+        });
+
         toast.success(response.data.message || "Login successful!");
-        // Redirect based on role
-        if (role === 'owner') {
-          navigate('/owner');
+
+        // ✅ 4. Navigate based on role
+        if (user.role === "owner") {
+          navigate("/owner");
         } else {
-          navigate('/staff');
+          navigate("/staff");
         }
       }
     } catch (error) {
       console.error("Login failed", error);
-      // Toast is handled by the interceptor in api.ts, but we can add specific logic here if needed
+      // interceptor already handles toast
     } finally {
       setIsLoading(false);
     }
   };
 
-  const isOwner = role === 'owner';
+  const isOwner = role === "owner";
 
   return (
     <div className="min-h-screen gradient-hero flex flex-col items-center justify-center p-6 relative overflow-hidden">
