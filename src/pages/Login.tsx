@@ -51,8 +51,8 @@ const Login = () => {
 
         toast.success(response.data.message || "Login successful!");
 
-        // ✅ 4. Navigate based on role
-        if (user.role === "owner") {
+        // ✅ 4. Navigate based on role (FIXED: Checks for both owner and admin)
+        if (['owner', 'admin'].includes(user.role)) {
           navigate("/owner");
         } else {
           navigate("/staff");
