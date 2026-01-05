@@ -10,7 +10,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (userData: User) => void;
+  login: (userData: User) => Promise<void>;
   logout: () => void;
 }
 
@@ -41,10 +41,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(false);
   }, []);
 
-  const login = (userData: User) => {
-    console.log("🔐 Login called with:", userData);
-    setUser(userData);
-    localStorage.setItem("afh_user", JSON.stringify(userData));
+  const login = (userData: User): Promise<void> => {
+    return new Promise((resolve) => {
+      console.log("🔐 Login called with:", userData);
+      localStorage.setItem("afh_user", JSON.stringify(userData));
+      setUser(userData);
+      // Small delay to ensure state is updated before navigation
+      setTimeout(resolve, 50);
+    });
   };
 
   const logout = () => {

@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import DesktopSidebar from "@/components/layout/DesktopSidebar";
-import MobileBottomNav from "@/components/layout/MobileBottomNav";
-import { ArrowLeft, Receipt, Globe, ChevronRight, LogOut } from "lucide-react";
+import { Receipt, Globe, ChevronRight, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
@@ -51,22 +50,18 @@ const Staff = () => {
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="lg:hidden sticky top-0 z-30 glass px-4 py-4"
+        className="lg:hidden sticky top-0 z-30 glass px-4 py-4 flex justify-between items-center"
       >
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate("/")}
-            className="p-2 rounded-full hover:bg-muted transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <h1 className="font-display text-xl font-bold">Staff Dashboard</h1>
-            <p className="text-sm text-muted-foreground">
-              Sales & inventory management
-            </p>
-          </div>
+        <div>
+          <h1 className="font-display text-xl font-bold">Staff Dashboard</h1>
+          <p className="text-sm text-muted-foreground">Hi, {user?.name || 'Staff'}</p>
         </div>
+        <button
+          onClick={handleLogout}
+          className="p-2 text-muted-foreground hover:text-destructive transition-colors"
+        >
+          <LogOut className="w-5 h-5" />
+        </button>
       </motion.header>
 
       {/* Main Content */}
@@ -128,9 +123,6 @@ const Staff = () => {
           ))}
         </div>
       </main>
-
-      {/* Mobile Bottom Navigation */}
-      <MobileBottomNav role="staff" />
     </div>
   );
 };

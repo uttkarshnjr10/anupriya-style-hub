@@ -40,8 +40,8 @@ const Login = () => {
             safeRole = 'owner';
         }
 
-        // 2. Save to Context & LocalStorage
-        login({
+        // 2. Save to Context & LocalStorage - await to prevent race condition
+        await login({
           id: user._id,
           name: user.name,
           role: safeRole, 
@@ -51,14 +51,10 @@ const Login = () => {
         toast.success(response.data.message || "Login successful!");
 
         // --- CRITICAL FIX FOR PRODUCTION ---
-        // We use window.location.href instead of navigate()
-        // This ensures the App reloads and reads the user from LocalStorage
-        // BEFORE checking if you are allowed to enter.
-        if (safeRole === "owner") {
-          window.location.href = "/owner";
-        } else {
-          window.location.href = "/staff";
-        }
+        // Use window.location.href to force full reload after state is saved
+        // This prevents race conditions in incognito/other devices
+        const targetPath = safeRole === "owner" ? "/owner" : "/staff";
+        window.location.href = targetPath;
         // -----------------------------------
       }
     } catch (error: any) {
