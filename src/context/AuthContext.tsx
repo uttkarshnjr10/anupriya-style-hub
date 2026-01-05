@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 interface User {
   id: string;
   name: string;
-  role: "owner" | "staff";
+  role: string;
   email: string;
 }
 
@@ -20,41 +20,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 1. Check LocalStorage on Load (Restores session on refresh)
   useEffect(() => {
+    // DEBUG: Print what we find on load
     const storedUser = localStorage.getItem("afh_user");
+    console.log("🔄 AuthContext Loading...");
+    console.log("📦 Found in LocalStorage:", storedUser);
+
     if (storedUser) {
       try {
-        setUser(JSON.parse(storedUser));
+        const parsedUser = JSON.parse(storedUser);
+        console.log("✅ Parsed User:", parsedUser);
+        setUser(parsedUser);
       } catch (error) {
-        console.error("Failed to parse user data");
+        console.error("❌ Failed to parse user data", error);
         localStorage.removeItem("afh_user");
       }
+    } else {
+      console.warn("⚠️ No user found in LocalStorage");
     }
     setIsLoading(false);
   }, []);
 
-  // 2. Login Function (Call this from Login.tsx)
   const login = (userData: User) => {
+    console.log("🔐 Login called with:", userData);
     setUser(userData);
     localStorage.setItem("afh_user", JSON.stringify(userData));
   };
 
-  // 3. Logout Function
-//   const logout = () => {
-//     setUser(null);
-//     localStorage.removeItem("afh_user");
-//     // Also clear cookies via API if possible
-//     window.location.href = "/login";
-//   };
-// 3. Logout Function
   const logout = () => {
-    // 1. Clear Local Storage
+    console.log("👋 Logout called");
+    setUser(null);
     localStorage.removeItem("afh_user");
-
-    // 2. Force Reload to Home Page
-    // We REMOVED setUser(null) to stop ProtectedRoute from 
-    // redirecting us to /login while the page is trying to reload.
     window.location.href = "/";
   };
 
