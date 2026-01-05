@@ -6,16 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
-
-// ✅ 1. Import Auth hook
 import { useAuth } from "@/context/AuthContext";
 
 const Login = () => {
   const [searchParams] = useSearchParams();
   const role = (searchParams.get("role") as "staff" | "owner") || "staff";
   const navigate = useNavigate();
-
-  // ✅ 2. Get login function from context
   const { login } = useAuth();
 
   const [email, setEmail] = useState("");
@@ -30,37 +26,36 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      // Construct payload based on role
-      const payload =
-        role === "owner"
-          ? { email, password }
-          : { staffId, pin };
-
+      const payload = role === "owner" ? { email, password } : { staffId, pin };
       const response = await api.post("/auth/login", payload);
 
       if (response.data.success) {
         const user = response.data.data.user;
 
-        // ✅ 3. SAVE USER TO AUTH CONTEXT
+        // --- FIX: Normalize Role to Lowercase ---
+        // Backend sends "OWNER", Frontend needs "owner"
+        const normalizedRole = user.role.toLowerCase(); 
+        // ----------------------------------------
+
+        // Save Normalized Data to Context
         login({
           id: user._id,
           name: user.name,
-          role: user.role,
+          role: normalizedRole, 
           email: user.email,
         });
 
         toast.success(response.data.message || "Login successful!");
 
-        // ✅ 4. Navigate based on role (FIXED: Checks for both owner and admin)
-        if (['owner', 'admin'].includes(user.role)) {
+        // Navigate based on normalized role
+        if (normalizedRole === "owner") {
           navigate("/owner");
         } else {
           navigate("/staff");
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login failed", error);
-      // interceptor already handles toast
     } finally {
       setIsLoading(false);
     }
