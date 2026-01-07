@@ -1,3 +1,4 @@
+import { useAuth } from "@/context/AuthContext";
 import { motion } from "framer-motion";
 import { Home, ShoppingBag, BarChart3, Settings, LogOut, Store, Users, Receipt, Globe } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -7,15 +8,17 @@ interface SidebarProps {
 }
 
 const DesktopSidebar = ({ role }: SidebarProps) => {
-  const location = useLocation();
-  const navigate = useNavigate();
-
+  const { logout } = useAuth();
   // Only logout - all other navigation removed as per request
   const staffLinks: { icon: typeof Home; label: string; path: string }[] = [];
   const ownerLinks: { icon: typeof Home; label: string; path: string }[] = [];
 
   const links = role === 'staff' ? staffLinks : ownerLinks;
 
+  const handleLogout = async () => {
+  await logout(); // Wait for logout to complete
+  // Navigation happens automatically via window.location.href
+};
   return (
     <motion.aside
       initial={{ x: -100, opacity: 0 }}
@@ -36,7 +39,7 @@ const DesktopSidebar = ({ role }: SidebarProps) => {
         <motion.button
           whileHover={{ x: 4 }}
           whileTap={{ scale: 0.98 }}
-          onClick={() => navigate('/')}
+          onClick={logout}
           className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:bg-white/10 hover:text-white transition-colors"
         >
           <LogOut className="w-5 h-5" />

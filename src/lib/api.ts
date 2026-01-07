@@ -1,23 +1,15 @@
 import axios from 'axios';
 import { toast } from 'sonner';
 
-// 1. Dynamic Base URL Logic
-// Uses environment variable if present, otherwise defaults to localhost
-// const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
-// const BASE_URL = import.meta.env.PROD 
-//   ? (import.meta.env.VITE_API_URL || 'https://your-production-backend.com/api/v1')
-//   : '/api/v1';
-
 const BASE_URL = import.meta.env.PROD 
-  ? (import.meta.env.VITE_API_URL) // Remove the fallback string OR put your REAL backend URL there
+  ? (import.meta.env.VITE_API_URL)
   : '/api/v1';
-// Error object returned by backend
+
 export interface ApiError {
   field?: string;
   message: string;
 }
 
-// Standard Backend Response Format
 export interface ApiResponse<T> {
   success: boolean;
   statusCode: number;
@@ -26,7 +18,6 @@ export interface ApiResponse<T> {
   errors?: ApiError[];
 }
 
-// Pagination Metadata
 export interface PaginationData {
   total: number;
   page: number;
@@ -34,7 +25,6 @@ export interface PaginationData {
   totalPages: number;
 }
 
-// Transaction Interface (Matches Backend Schema)
 export interface Transaction {
   _id: string;
   type: 'SALE' | 'EXPENSE';
@@ -52,14 +42,23 @@ export interface Transaction {
 }
 
 export const api = axios.create({
-  baseURL: BASE_URL, // <--- Updated to use dynamic URL
-  withCredentials: true, // Enables Cookies
+  baseURL: BASE_URL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Global Error Handler
+// Request Interceptor - Add token from localStorage for incognito mode
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('accessToken');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Response Interceptor - Handle token refresh
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -69,11 +68,30 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        // <--- Updated to use dynamic URL
-        await axios.post(`${BASE_URL}/auth/refresh-token`, {}, { withCredentials: true });
+        const refreshResponse = await axios.post(
+          `${BASE_URL}/auth/refresh-token`,
+          {},
+          { 
+            withCredentials: true,
+            headers: {
+              // Send refresh token from localStorage as fallback
+              'Authorization': `Bearer ${localStorage.getItem('refreshToken')}`
+            }
+          }
+        );
+
+        // Update tokens in localStorage
+        const { accessToken, refreshToken } = refreshResponse.data.data;
+        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+
+        // Retry original request with new token
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
-        // Refresh failed - Redirect to login
+        // Refresh failed - Clear storage and redirect
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }

@@ -22,7 +22,7 @@ interface DashboardStats {
 
 const Owner = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   // 1. Stats State
   const [stats, setStats] = useState<DashboardStats>({
@@ -101,7 +101,7 @@ const Owner = () => {
              <RegisterStaffDialog />
           </div>
           <button
-            onClick={handleLogout}
+            onClick={logout}
             className="p-2 text-muted-foreground hover:text-destructive transition-colors"
           >
             <LogOut className="w-5 h-5" />
@@ -124,7 +124,7 @@ const Owner = () => {
             <div className="flex items-center gap-4">
               <RegisterStaffDialog />
               <button
-                onClick={handleLogout}
+                onClick={logout}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl bg-card border border-border hover:border-destructive/50 hover:text-destructive transition-colors shadow-sm"
               >
                 <LogOut className="w-4 h-4" />

@@ -1,4 +1,6 @@
+import { api } from "@/lib/api";
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { toast } from "sonner";
 
 interface User {
   id: string;
@@ -51,11 +53,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
-  const logout = () => {
-   // console.log("👋 Logout called");
+  const logout = async () => {
+
+    try {
+       await api.post("/auth/logout");
+    // console.log("👋 Logout called");
     setUser(null);
     localStorage.removeItem("afh_user");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
     window.location.href = "/";
+    toast.success("Logged out successfully");
+    } catch (error) {
+       toast.error("Logout failed, but redirecting anyway."); 
+    } finally {
+       setUser(null);
+       localStorage.removeItem("afh_user");
+       localStorage.removeItem("accessToken");
+       localStorage.removeItem("refreshToken");
+       window.location.href = "/";
+    }
   };
 
   return (
