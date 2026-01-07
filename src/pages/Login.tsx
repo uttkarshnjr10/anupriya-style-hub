@@ -33,12 +33,17 @@ const Login = () => {
 
       if (response.data.success) {
         const user = response.data.data.user;
+        const { accessToken, refreshToken } = response.data.data;
 
-        // 2. Normalize Role
+        // 2. Store tokens in localStorage (for incognito mode support)
+        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+
+        // 3. Normalize Role
         let safeRole = user.role.trim().toLowerCase();
         if (safeRole === 'admin') safeRole = 'owner';
 
-        // 3. Save to Context
+        // 4. Save to Context
         await login({
           id: user._id,
           name: user.name,
@@ -48,23 +53,24 @@ const Login = () => {
 
         toast.success(response.data.message || "Login successful!");
 
-        // 4. ROBUST REDIRECT STRATEGY
-        // We delay slightly to allow the browser to process the Set-Cookie header
-        // This is crucial for Safari/Brave
+        // 5. ROBUST REDIRECT STRATEGY
+        // Delay slightly to allow browser to process Set-Cookie header
         setTimeout(() => {
            const targetPath = safeRole === "owner" ? "/owner" : "/staff";
            
-           // We use window.location.href instead of navigate() 
-           // to FORCE a fresh request to the server. 
-           // This ensures the new cookie is included in the very first request the dashboard makes.
+           // Force fresh request to ensure cookie is included
            window.location.href = targetPath;
         }, 100);
       }
     } catch (error: any) {
       console.error("Login failed", error);
-      // Detailed error for Brave/Safari users
+      
+      // Clear any partial localStorage on error
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      
       if (error.response?.status === 401 || error.message?.includes("Network Error")) {
-         toast.error("Login failed. If using Brave/Safari, please enable 'Allow Cross-Site Cookies' or turn off shields for this site.");
+         toast.error("Login failed. If using Brave/Safari/Incognito, please ensure cookies are enabled.");
       } else {
          toast.error(error.response?.data?.message || "Invalid credentials");
       }
@@ -118,6 +124,7 @@ const Login = () => {
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
+            {/* ...existing form fields... */}
             {isOwner ? (
               <>
                 <div className="space-y-2">

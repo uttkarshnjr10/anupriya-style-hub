@@ -8,7 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 
 const Staff = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   const handleLogout = async () => {
     try {
@@ -57,7 +57,7 @@ const Staff = () => {
           <p className="text-sm text-muted-foreground">Hi, {user?.name || 'Staff'}</p>
         </div>
         <button
-          onClick={handleLogout}
+          onClick={logout}
           className="p-2 text-muted-foreground hover:text-destructive transition-colors"
         >
           <LogOut className="w-5 h-5" />
@@ -84,7 +84,7 @@ const Staff = () => {
 
             {/* Logout Button */}
             <button
-              onClick={handleLogout}
+              onClick={logout}
               className="p-2.5 bg-white border border-border rounded-xl shadow-sm active:scale-95 transition-transform"
             >
               <LogOut className="w-5 h-5 text-red-500" />
