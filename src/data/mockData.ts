@@ -19,6 +19,11 @@ export interface SaleRecord {
   time: string;
   soldBy: string;
   image?: string;
+    // New fields for Payment Status
+  status?: 'paid' | 'due';
+  amountPaid?: number;
+  dueAmount?: number;
+  customerName?: string; // Optional: helpful for dues
 }
 
 export interface OnlineInventoryItem {
@@ -82,11 +87,68 @@ export const products: Product[] = [
 ];
 
 export const recentSales: SaleRecord[] = [
-  { id: '1', productName: 'Royal Silk Sherwani', price: 15999, category: 'Men', subCategory: 'Silk Sherwani', time: '10 mins ago', soldBy: 'Rahul' },
-  { id: '2', productName: 'Designer Banarasi Saree', price: 8999, category: 'Women', subCategory: 'Silk Saree', time: '25 mins ago', soldBy: 'Priya' },
-  { id: '3', productName: 'Cotton Casual Shirt', price: 1299, category: 'Men', subCategory: 'Cotton Shirt', time: '1 hour ago', soldBy: 'Rahul' },
-  { id: '4', productName: 'Kids Party Wear', price: 2499, category: 'Kids', subCategory: 'Party Wear', time: '2 hours ago', soldBy: 'Priya' },
-  { id: '5', productName: 'Anarkali Suit', price: 5499, category: 'Women', subCategory: 'Anarkali Suit', time: '3 hours ago', soldBy: 'Rahul' },
+  { 
+    id: '1', 
+    productName: 'Royal Silk Sherwani', 
+    price: 15999, 
+    category: 'Men', 
+    subCategory: 'Silk Sherwani', 
+    time: '10 mins ago', 
+    soldBy: 'Rahul',
+    status: 'paid',
+    amountPaid: 15999,
+    dueAmount: 0
+  },
+  { 
+    id: '2', 
+    productName: 'Designer Banarasi Saree', 
+    price: 8999, 
+    category: 'Women', 
+    subCategory: 'Silk Saree', 
+    time: '25 mins ago', 
+    soldBy: 'Priya',
+    status: 'due', // <--- This one is Due
+    amountPaid: 4000,
+    dueAmount: 4999,
+    customerName: "Mrs. Sharma"
+  },
+  { 
+    id: '3', 
+    productName: 'Cotton Casual Shirt', 
+    price: 1299, 
+    category: 'Men', 
+    subCategory: 'Cotton Shirt', 
+    time: '1 hour ago', 
+    soldBy: 'Rahul',
+    status: 'paid',
+    amountPaid: 1299,
+    dueAmount: 0
+  },
+  { 
+    id: '4', 
+    productName: 'Kids Party Wear', 
+    price: 2499, 
+    category: 'Kids', 
+    subCategory: 'Party Wear', 
+    time: '2 hours ago', 
+    soldBy: 'Priya',
+    status: 'due', // <--- Another Due
+    amountPaid: 0,
+    dueAmount: 2499,
+    customerName: "Mr. Verma"
+  },
+  { 
+    id: '5', 
+    productName: 'Anarkali Suit', 
+    price: 5499, 
+    category: 'Women', 
+    subCategory: 'Anarkali Suit', 
+    time: '3 hours ago', 
+    soldBy: 'Rahul',
+    status: 'paid',
+    amountPaid: 5499,
+    dueAmount: 0
+  },
 ];
 
 export const onlineInventory: OnlineInventoryItem[] = [
