@@ -17,6 +17,7 @@ import OwnerInventoryHistory from "./pages/OwnerInventoryHistory";
 import StaffBilling from "./pages/StaffBilling";
 import StaffInventory from "./pages/StaffInventory";
 import ProtectedRoute from "./layout/ProtectedRoute";
+import DuesManagement from "./pages/DuesManagement";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +47,7 @@ const App = () => (
                <Route path="/staff" element={<Staff />} />
                <Route path="/staff/billing" element={<StaffBilling />} />
                <Route path="/staff/inventory" element={<StaffInventory />} />
+               <Route path="/staff/dues" element={<DuesManagement />} />
             </Route>
 
             {/* Fallback */}
