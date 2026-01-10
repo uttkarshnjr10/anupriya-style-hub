@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import DesktopSidebar from "@/components/layout/DesktopSidebar";
 import RecordSaleForm from "@/components/dashboard/RecordSaleForm";
@@ -12,8 +12,9 @@ import { toast } from "sonner";
 const StaffBilling = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [realRecentSales, setRealRecentSales] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  
+  // We use this key to force RecentActivity to refresh after a sale
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const handleLogout = async () => {
     try {
@@ -27,30 +28,16 @@ const StaffBilling = () => {
     }
   };
 
-  // Function to fetch real data
-  const fetchRecentSales = useCallback(async () => {
-    try {
-      // Fetch last 10 sales
-      const response = await api.get('/transactions/history?limit=10&type=SALE');
-      if (response.data.success) {
-        setRealRecentSales(response.data.data.transactions);
-      }
-    } catch (error) {
-      console.error("Failed to fetch recent sales:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  // Fetch on mount
-  useEffect(() => {
-    fetchRecentSales();
-  }, [fetchRecentSales]);
+  const handleSaleSuccess = () => {
+    // Increment key to trigger re-fetch in RecentActivity
+    setRefreshKey(prev => prev + 1);
+  };
 
   return (
     <div className="min-h-screen bg-secondary">
       <DesktopSidebar role="staff" />
 
+      {/* Mobile Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -87,11 +74,13 @@ const StaffBilling = () => {
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Pass the refresh function to the form */}
-          <RecordSaleForm onSaleSuccess={fetchRecentSales} />
+          {/* Form: Calls handleSaleSuccess when done */}
+          <RecordSaleForm onSaleSuccess={handleSaleSuccess} />
 
-          {/* Pass the REAL data here */}
-          <RecentActivity sales={realRecentSales} />
+          {/* Activity: Remounts (refetches) whenever refreshKey changes */}
+          <div className="h-[600px]">
+             <RecentActivity key={refreshKey} />
+          </div>
         </div>
       </main>
     </div>

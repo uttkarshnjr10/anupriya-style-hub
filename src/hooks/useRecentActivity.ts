@@ -1,43 +1,70 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { api } from "@/lib/api";
+import { toast } from "sonner";
+// Ensure APITransaction type is imported. If you don't have it, use 'any' temporarily.
+import { APITransaction } from "@/types/api";
 
-// Types
 export type SortOption = 'newest' | 'oldest' | 'high_amount' | 'low_amount';
 export type FilterOption = 'all' | 'paid' | 'due';
 
-export const useRecentActivity = (initialSales: any[]) => {
-  // 1. Data State (Local copy for optimistic updates)
-  const [localSales, setLocalSales] = useState<any[]>([]);
-
-  // 2. Filter & Sort State
+export const useRecentActivity = () => {
+  const [sales, setSales] = useState<APITransaction[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<FilterOption>('all');
   const [sortOption, setSortOption] = useState<SortOption>('newest');
-
-  // 3. Selection & Modal State
-  const [selectedSale, setSelectedSale] = useState<any | null>(null);
+  
+  // Modal State
+  const [selectedSale, setSelectedSale] = useState<APITransaction | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Sync props to local state when they change
+  // ── 1. FETCHING
+  const fetchSales = useCallback(async () => {
+    // Only show loading spinner on initial load to avoid UI flickering during updates
+    if (sales.length === 0) setIsLoading(true);
+    
+    try {
+      const response = await api.get('/transactions/history?limit=50&type=SALE');
+      
+      // Safety check: Ensure we actually got an array
+      if (response.data?.success && Array.isArray(response.data.data.transactions)) {
+        setSales(response.data.data.transactions);
+      } else {
+        setSales([]); // Fallback to empty array on malformed response
+      }
+    } catch (error) {
+      console.error("Failed to fetch activity:", error);
+      // We don't toast error here to avoid annoying the user if it's just a background refresh
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Initial load
   useEffect(() => {
-    if (initialSales) setLocalSales(initialSales);
-  }, [initialSales]);
+    fetchSales();
+  }, [fetchSales]);
 
-  // --- LOGIC: Filter & Sort ---
+  // ── 2. FILTERING & SORTING (Schema Aligned) ────────────────────────
   const processedSales = useMemo(() => {
-    let result = [...localSales];
+    if (!sales) return [];
 
-    // Filter
+    let result = [...sales];
+
+    // Filter Logic using the correct 'paymentStatus' field
     if (activeFilter === 'paid') {
-      result = result.filter(s => s.status === 'paid' || (!s.status && (s.price > 0 || s.amount > 0)));
+      result = result.filter(s => s.paymentStatus === 'PAID');
     } else if (activeFilter === 'due') {
-      result = result.filter(s => s.status === 'due');
+      result = result.filter(s => s.paymentStatus === 'DUE');
     }
 
-    // Sort
+    // Sort Logic
     result.sort((a, b) => {
-      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      const amountA = a.amount || a.price || 0;
-      const amountB = b.amount || b.price || 0;
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      
+      // Handle missing amounts safely
+      const amountA = a.amount || 0;
+      const amountB = b.amount || 0;
 
       switch (sortOption) {
         case 'oldest': return dateA - dateB;
@@ -48,59 +75,47 @@ export const useRecentActivity = (initialSales: any[]) => {
     });
 
     return result;
-  }, [localSales, activeFilter, sortOption]);
+  }, [sales, activeFilter, sortOption]);
 
-  // --- LOGIC: Update Payment ---
-  const updatePayment = async (amount: number) => {
+  // ── 3. PAYMENT UPDATE LOGIC ────────────────────────────────────────
+  const updatePayment = async (amount: number, mode: "CASH" | "ONLINE") => {
     if (!selectedSale) return;
+    
     setIsUpdating(true);
+    try {
+      const res = await api.post(`/dues/${selectedSale._id}/collect`, {
+        amount: amount,
+        paymentMode: mode
+      });
 
-    // ------------------------------------------------------------------
-    // TODO: BACKEND INTEGRATION
-    // Call your API here: await api.post(`/transactions/${selectedSale.id}/pay`, { amount });
-    // ------------------------------------------------------------------
-
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    // Optimistic UI Update
-    const updatedSales = localSales.map(sale => {
-      // Check both ID types (MongoDB _id or string id)
-      if (sale.id === selectedSale.id || sale._id === selectedSale.id) {
-        const newPaid = (sale.amountPaid || 0) + amount;
-        const currentTotal = sale.price || sale.amount || 0;
-        // Recalculate due. Note: using currentTotal instead of old due ensures accuracy
-        const newDue = Math.max(0, currentTotal - newPaid);
-        const isFullyPaid = newDue <= 0;
-
-        return {
-          ...sale,
-          amountPaid: newPaid,
-          dueAmount: newDue,
-          status: isFullyPaid ? 'paid' : 'due'
-        };
+      if (res.data.success) {
+        toast.success(`Received ₹${amount} via ${mode}`);
+        
+        // 1. Close Modal immediately
+        setSelectedSale(null);
+        
+        // 2. Refresh list to update UI (Move from Due -> Paid)
+        await fetchSales();
       }
-      return sale;
-    });
-
-    setLocalSales(updatedSales);
-    setIsUpdating(false);
-    setSelectedSale(null); // Close modal
+    } catch (error: any) {
+      console.error("Payment failed", error);
+      toast.error(error.response?.data?.message || "Payment processing failed");
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   return {
-    // Data
-    processedSales,
-    // Filter Controls
+    sales: processedSales,
+    isLoading,
     activeFilter,
     setActiveFilter,
     sortOption,
     setSortOption,
-    // Modal Controls
     selectedSale,
     setSelectedSale,
-    // Actions
     updatePayment,
-    isUpdating
+    isUpdating,
+    refresh: fetchSales // Exposed if you need to manually refresh elsewhere
   };
 };
