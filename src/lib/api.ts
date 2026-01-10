@@ -103,3 +103,48 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Matches 'PaymentType' Mongoose Model
+export interface APIPaymentType {
+  _id: string;
+  type: "CASH" | "ONLINE" | "DUES";
+  amount: number;
+  status?: "PENDING" | "PAID" | "PARTIAL"; // specific to DUES
+  duesDetails?: {
+    name?: string;        // Customer Name
+    phoneNumber?: string; // Customer Phone
+    dueDate?: string;
+  };
+}
+
+// Matches 'Transaction' Mongoose Model
+export interface APITransaction {
+  _id: string;
+  type: "SALE" | "EXPENSE";
+  amount: number; // Total amount
+  createdAt: string; // ISO Date string
+  
+  // Populated Staff Field
+  staffId: {
+    _id: string;
+    name: string;
+  };
+
+  // The Snapshot
+  productSnapshot?: {
+    name: string;
+    category: string;
+    subCategory: string;
+    url?: string; // Image
+  };
+
+  // Payment Breakdown
+  paymentBreakdown: {
+    cash: number;
+    online: number;
+    dues: number;
+  };
+
+  // The Detailed Payment Records
+  paymentTypes: APIPaymentType[]; 
+}

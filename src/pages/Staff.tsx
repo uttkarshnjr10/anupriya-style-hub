@@ -10,18 +10,6 @@ const Staff = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  const handleLogout = async () => {
-    try {
-      await api.post("/auth/logout");
-      toast.success("Logged out successfully");
-    } catch {
-      toast.error("Logout failed, but redirecting anyway.");
-    } finally {
-      localStorage.removeItem("afh_user");
-      window.location.href = "/";
-    }
-  };
-
   const menuItems = [
     {
       title: "Record Sale / Billing",
@@ -36,6 +24,14 @@ const Staff = () => {
       description: "Manage what customers see on the website",
       icon: Globe,
       path: "/staff/inventory",
+      color: "bg-primary/10 text-primary",
+      gradient: "from-primary/5 to-primary/10",
+    },
+    {
+      title: "Dues Management",
+      description: "Manage customer dues and payments",
+      icon: Globe,
+      path: "/staff/dues",
       color: "bg-primary/10 text-primary",
       gradient: "from-primary/5 to-primary/10",
     },
