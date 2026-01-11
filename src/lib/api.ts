@@ -64,6 +64,12 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
+    // 🛑 FIX: Don't try to refresh token if the error came from the LOGIN endpoint
+    // This prevents the redirect loop when user enters wrong password
+    if (originalRequest.url?.includes('/auth/login')) {
+       return Promise.reject(error);
+    }
+
     // Handle 401 (Unauthorized) - Attempt Refresh
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
@@ -74,32 +80,29 @@ api.interceptors.response.use(
           { 
             withCredentials: true,
             headers: {
-              // Send refresh token from localStorage as fallback
               'Authorization': `Bearer ${localStorage.getItem('refreshToken')}`
             }
           }
         );
 
-        // Update tokens in localStorage
         const { accessToken, refreshToken } = refreshResponse.data.data;
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
 
-        // Retry original request with new token
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
-        // Refresh failed - Clear storage and redirect
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
+        window.location.href = '/login'; // Redirect only if refresh fails
         return Promise.reject(refreshError);
       }
     }
 
-    // Handle other errors
-    const message = error.response?.data?.message || 'Something went wrong';
-    toast.error(message);
+    // Handle generic errors (Optional: You can remove this toast if you want to handle it manually in components)
+    // const message = error.response?.data?.message || 'Something went wrong';
+    // toast.error(message);
+    
     return Promise.reject(error);
   }
 );

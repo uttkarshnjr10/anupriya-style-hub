@@ -28,22 +28,19 @@ const Login = () => {
     try {
       const payload = role === "owner" ? { email, password } : { staffId, pin };
       
-      // 1. Attempt Login
       const response = await api.post("/auth/login", payload);
 
       if (response.data.success) {
         const user = response.data.data.user;
         const { accessToken, refreshToken } = response.data.data;
 
-        // 2. Store tokens in localStorage (for incognito mode support)
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
 
-        // 3. Normalize Role
         let safeRole = user.role.trim().toLowerCase();
         if (safeRole === 'admin') safeRole = 'owner';
 
-        // 4. Save to Context
+        // Update Context
         await login({
           id: user._id,
           name: user.name,
@@ -51,28 +48,30 @@ const Login = () => {
           email: user.email,
         });
 
-        toast.success(response.data.message || "Login successful!");
+        toast.success("Login successful");
 
-        // 5. ROBUST REDIRECT STRATEGY
-        // Delay slightly to allow browser to process Set-Cookie header
-        setTimeout(() => {
-           const targetPath = safeRole === "owner" ? "/owner" : "/staff";
-           
-           // Force fresh request to ensure cookie is included
-           window.location.href = targetPath;
-        }, 100);
+        // Use navigate instead of window.location for smoother SPA transition
+        // unless you specifically need to refresh cookies
+        const targetPath = safeRole === "owner" ? "/owner" : "/staff";
+        window.location.href = targetPath; 
       }
     } catch (error: any) {
       console.error("Login failed", error);
       
-      // Clear any partial localStorage on error
+      // Clear sensitive data on error
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       
-      if (error.response?.status === 401 || error.message?.includes("Network Error")) {
-         toast.error("Login failed. If using Brave/Safari/Incognito, please ensure cookies are enabled.");
+      const status = error.response?.status;
+      const msg = error.response?.data?.message;
+
+      if (status === 401) {
+          toast.error("Invalid credentials. Please try again.");
+          // Stay on page, do nothing else
+      } else if (error.code === "ERR_NETWORK") {
+          toast.error("Network error. Please check your connection.");
       } else {
-         toast.error(error.response?.data?.message || "Invalid credentials");
+          toast.error(msg || "Login failed. Please try again.");
       }
     } finally {
       setIsLoading(false);
@@ -124,7 +123,6 @@ const Login = () => {
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
-            {/* ...existing form fields... */}
             {isOwner ? (
               <>
                 <div className="space-y-2">
